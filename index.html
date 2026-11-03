@@ -1,0 +1,173 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1220">
+<title>DSM | Device Security Monitor</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0b1220;color:#edf3fb;font-family:Arial,sans-serif}
+header{padding:23px 18px;background:#111d30;border-bottom:1px solid #26364d}
+header h1{margin:0;font-size:25px;letter-spacing:1px}
+header p{margin:7px 0 0;color:#9eafc4;font-size:12px}
+main{max-width:850px;margin:auto;padding:17px}
+.status{background:#12352f;border:1px solid #276b59;padding:14px;border-radius:12px;margin-bottom:16px;color:#9de6cb}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.card{background:#142137;border:1px solid #293b55;border-radius:13px;padding:15px;min-width:0}
+.card small{color:#9eafc4}
+.card h2{font-size:20px;margin:10px 0 3px;overflow-wrap:anywhere}
+.card p{font-size:12px;color:#9eafc4;margin:5px 0}
+.section{margin-top:20px}
+.section h3{font-size:16px}
+button{background:#45c6a1;color:#071a15;border:0;padding:12px 15px;border-radius:9px;font-weight:bold;cursor:pointer}
+button.secondary{background:#293c56;color:white}
+.actions{display:flex;gap:9px;flex-wrap:wrap}
+.log{background:#101b2d;border:1px solid #293b55;border-radius:10px;padding:12px;margin:9px 0;font-size:12px;color:#cbd9e9}
+footer{text-align:center;padding:24px;color:#8192a8;font-size:11px}
+@media(max-width:420px){.grid{grid-template-columns:1fr 1fr}.card{padding:12px}.card h2{font-size:17px}}
+</style>
+</head>
+<body>
+<header>
+<h1>🛡 DSM SECURITY</h1>
+<p>DEVICE SECURITY MONITOR · PERSONAL EDITION</p>
+</header>
+<main>
+<div class="status" id="status">● Dashboard aktif · Pemeriksaan lokal</div>
+
+<div class="grid">
+<div class="card">
+<small>DEVICE PLATFORM</small>
+<h2 id="platform">Memeriksa...</h2>
+<p>Informasi browser</p>
+</div>
+<div class="card">
+<small>NETWORK STATUS</small>
+<h2 id="network">Memeriksa...</h2>
+<p id="networkInfo">Status koneksi</p>
+</div>
+<div class="card">
+<small>BATTERY</small>
+<h2 id="battery">Tidak tersedia</h2>
+<p id="charging">Informasi baterai</p>
+</div>
+<div class="card">
+<small>SCREEN SIZE</small>
+<h2 id="screen">-</h2>
+<p>Resolusi browser</p>
+</div>
+<div class="card">
+<small>SECURE CONNECTION</small>
+<h2 id="https">Memeriksa...</h2>
+<p>Keamanan halaman ini</p>
+</div>
+<div class="card">
+<small>LOCAL STORAGE</small>
+<h2 id="storage">Memeriksa...</h2>
+<p>Status penyimpanan browser</p>
+</div>
+</div>
+
+<div class="section">
+<h3>🔍 Security Check</h3>
+<div class="card">
+<p>Pemeriksaan dasar yang tersedia melalui browser. Ini bukan pemindaian antivirus atau deteksi malware menyeluruh.</p>
+<div class="actions">
+<button onclick="scan()">MULAI PEMERIKSAAN</button>
+<button class="secondary" onclick="report()">BUAT LAPORAN</button>
+</div>
+<div id="result" class="log">Belum ada pemeriksaan.</div>
+</div>
+</div>
+
+<div class="section">
+<h3>📋 Activity Logs</h3>
+<div id="logs"></div>
+<button class="secondary" onclick="clearLogs()">Hapus riwayat lokal</button>
+</div>
+</main>
+<footer>DSM Personal Edition · Data diproses lokal di browser</footer>
+
+<script>
+const $=id=>document.getElementById(id);
+let historyLogs=JSON.parse(localStorage.getItem("dsm_logs")||"[]");
+
+function log(message){
+ historyLogs.unshift(new Date().toLocaleString("id-ID")+" — "+message);
+ historyLogs=historyLogs.slice(0,30);
+ localStorage.setItem("dsm_logs",JSON.stringify(historyLogs));
+ showLogs();
+}
+function showLogs(){
+ $("logs").innerHTML=historyLogs.length?
+ historyLogs.map(x=>'<div class="log">'+escapeHTML(x)+'</div>').join("") :
+ '<div class="log">Belum ada aktivitas.</div>';
+}
+function escapeHTML(s){
+ return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function update(){
+ $("platform").textContent=/Android/i.test(navigator.userAgent)?"Android":navigator.platform||"Browser";
+ $("network").textContent=navigator.onLine?"ONLINE":"OFFLINE";
+ $("networkInfo").textContent="Koneksi menurut browser";
+ $("screen").textContent=screen.width+" × "+screen.height;
+ $("https").textContent=location.protocol==="https:"?"HTTPS":"NON-HTTPS";
+ try{
+  localStorage.setItem("dsm_test","ok");
+  localStorage.removeItem("dsm_test");
+  $("storage").textContent="AKTIF";
+ }catch(e){$("storage").textContent="TERBATAS";}
+}
+async function batteryCheck(){
+ if(!navigator.getBattery)return;
+ try{
+  const b=await navigator.getBattery();
+  const draw=()=>{
+   $("battery").textContent=Math.round(b.level*100)+"%";
+   $("charging").textContent=b.charging?"Sedang mengisi daya":"Tidak mengisi daya";
+  };
+  draw();
+  b.addEventListener("levelchange",draw);
+  b.addEventListener("chargingchange",draw);
+ }catch(e){}
+}
+function scan(){
+ update();
+ let findings=[];
+ if(!navigator.onLine)findings.push("Perangkat sedang offline.");
+ if(location.protocol!=="https:" && location.hostname!=="localhost")
+ findings.push("Halaman tidak menggunakan HTTPS.");
+ if(!navigator.getBattery)findings.push("Informasi baterai tidak didukung browser.");
+ if(findings.length===0)findings.push("Pemeriksaan dasar selesai. Tidak ditemukan masalah pada indikator yang diperiksa.");
+ $("result").textContent=findings.join(" ");
+ log("Pemeriksaan dasar selesai.");
+}
+function report(){
+ const text="DSM SECURITY REPORT\nTanggal: "+new Date().toLocaleString("id-ID")+
+ "\nPlatform: "+$("platform").textContent+
+ "\nJaringan: "+$("network").textContent+
+ "\nLayar: "+$("screen").textContent+
+ "\nHTTPS: "+$("https").textContent+
+ "\nHasil: "+$("result").textContent;
+ const blob=new Blob([text],{type:"text/plain"});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement("a");
+ a.href=url;a.download="DSM-security-report.txt";a.click();
+ URL.revokeObjectURL(url);
+ log("Laporan keamanan dibuat.");
+}
+function clearLogs(){
+ historyLogs=[];
+ localStorage.removeItem("dsm_logs");
+ showLogs();
+}
+window.addEventListener("online",update);
+window.addEventListener("offline",update);
+update();
+batteryCheck();
+showLogs();
+</script>
+</body>
+</html>
