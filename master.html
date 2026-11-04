@@ -1,0 +1,128 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1220">
+<title>DSM Family Care Master</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0b1220;color:#edf3fb;font-family:Arial,sans-serif}
+header{background:#111d30;padding:22px 17px;border-bottom:1px solid #293b55}
+h1{font-size:23px;margin:0}
+header p,.muted{color:#9eafc4;font-size:12px}
+main{max-width:850px;margin:auto;padding:16px}
+.summary,.device,.panel{background:#142137;border:1px solid #293b55;border-radius:13px;padding:16px;margin-bottom:13px}
+.summary strong{font-size:28px;color:#45c6a1}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.device h3{margin:8px 0}
+.status{font-size:12px;color:#ffc66d}
+button{border:0;border-radius:9px;padding:12px;background:#45c6a1;color:#071a15;font-weight:bold}
+.secondary{background:#293c56;color:white}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+input,select{width:100%;padding:12px;border-radius:8px;border:1px solid #40516b;background:#0b1220;color:white;margin:7px 0}
+.hidden{display:none}
+footer{text-align:center;color:#8192a8;padding:20px;font-size:11px}
+@media(max-width:420px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+<h1>🛡 DSM FAMILY CARE</h1>
+<p>MULTI-DEVICE SECURITY MASTER</p>
+</header>
+<main>
+<div class="summary">
+<div class="muted">PERANGKAT TERDAFTAR</div>
+<strong id="total">0</strong>
+<p class="muted">Perangkat yang tercatat di dashboard ini</p>
+</div>
+
+<div class="actions">
+<button onclick="showForm()">+ TAMBAH PERANGKAT</button>
+<button class="secondary" onclick="showAll()">SEMUA PERANGKAT</button>
+</div>
+
+<div id="form" class="panel hidden">
+<h3>Daftarkan perangkat</h3>
+<input id="deviceName" placeholder="Nama, contoh: HP Orang Tua">
+<select id="deviceType">
+<option value="Android">Android</option>
+<option value="iPhone">iPhone / iOS</option>
+</select>
+<p class="muted">Pendaftaran ini hanya membuat kartu perangkat. Belum menghubungkan atau memantau HP.</p>
+<div class="actions">
+<button onclick="addDevice()">SIMPAN</button>
+<button class="secondary" onclick="hideForm()">BATAL</button>
+</div>
+</div>
+
+<h3>Daftar perangkat keluarga</h3>
+<div id="devices" class="grid"></div>
+
+<div class="panel">
+<h3>📡 Pusat koneksi</h3>
+<p class="muted">Backend belum dipasang. Belum ada perangkat yang mengirim laporan secara langsung.</p>
+<p id="connection">Status: Mode prototipe lokal</p>
+</div>
+
+<div class="panel">
+<h3>🔐 Privasi dan persetujuan</h3>
+<p class="muted">Setiap perangkat harus didaftarkan oleh pemiliknya dengan persetujuan yang jelas. Pemilik dapat menghentikan pemantauan.</p>
+</div>
+</main>
+<footer>DSM Family Care · Master Prototype</footer>
+
+<script>
+let devices=JSON.parse(localStorage.getItem("dsm_devices")||"[]");
+const $=id=>document.getElementById(id);
+
+function save(){
+ localStorage.setItem("dsm_devices",JSON.stringify(devices));
+ render();
+}
+function render(){
+ $("total").textContent=devices.length;
+ $("devices").innerHTML="";
+ if(!devices.length){
+  $("devices").innerHTML='<div class="device">Belum ada perangkat terdaftar.</div>';
+  return;
+ }
+ devices.forEach((d,i)=>{
+  const card=document.createElement("div");
+  card.className="device";
+  const name=document.createElement("h3");
+  name.textContent="📱 "+d.name;
+  const type=document.createElement("p");
+  type.textContent=d.type;
+  type.className="muted";
+  const status=document.createElement("p");
+  status.textContent="● Belum terhubung";
+  status.className="status";
+  const note=document.createElement("p");
+  note.textContent="Belum ada laporan perangkat.";
+  note.className="muted";
+  const del=document.createElement("button");
+  del.textContent="Hapus kartu";
+  del.className="secondary";
+  del.onclick=()=>{if(confirm("Hapus kartu perangkat ini?")){devices.splice(i,1);save();}};
+  card.append(name,type,status,note,del);
+  $("devices").appendChild(card);
+ });
+}
+function showForm(){$("form").classList.remove("hidden");}
+function hideForm(){$("form").classList.add("hidden");}
+function showAll(){render();window.scrollTo(0,document.body.scrollHeight);}
+function addDevice(){
+ const name=$("deviceName").value.trim();
+ if(!name){alert("Masukkan nama perangkat.");return;}
+ devices.push({name:name,type:$("deviceType").value});
+ $("deviceName").value="";
+ hideForm();
+ save();
+}
+render();
+</script>
+</body>
+</html>
