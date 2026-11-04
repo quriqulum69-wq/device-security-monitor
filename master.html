@@ -103,11 +103,20 @@ function render(){
   const note=document.createElement("p");
   note.textContent="Belum ada laporan perangkat.";
   note.className="muted";
+const detail=document.createElement("button");
+detail.textContent="LIHAT DETAIL";
+detail.onclick=()=>alert(
+"DETAIL PERANGKAT\n\n"+
+"Nama: "+d.name+"\n"+
+"Platform: "+d.type+"\n"+
+"Status: Belum terhubung\n"+
+"Laporan: Belum tersedia"
+);
   const del=document.createElement("button");
   del.textContent="Hapus kartu";
   del.className="secondary";
   del.onclick=()=>{if(confirm("Hapus kartu perangkat ini?")){devices.splice(i,1);save();}};
-  card.append(name,type,status,note,del);
+  card.append(name,type,status,note,detail,del);
   $("devices").appendChild(card);
  });
 }
